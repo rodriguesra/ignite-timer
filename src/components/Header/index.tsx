@@ -1,13 +1,15 @@
-// src/components/Header/index.tsx
 import { Scroll, Timer } from "phosphor-react";
 import { NavLink } from "react-router-dom";
-import logoIgnite from "../../assets/logo-ignite.svg";
-import HeaderContainer from "./styles.ts";
 
-const Header = () => {
+import logoIgnite from "../../assets/logo-ignite.svg";
+import { HeaderContainer } from "./styles";
+
+function Header() {
   return (
     <HeaderContainer>
-      <img src={logoIgnite} alt="logo ignite" />
+      <span>
+        <img src={logoIgnite} alt="" />
+      </span>
       <nav>
         <NavLink to="/" title="Timer">
           <Timer size={24} />
@@ -18,5 +20,6 @@ const Header = () => {
       </nav>
     </HeaderContainer>
   );
-};
+}
+
 export default Header;
