@@ -1,5 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { differenceInSeconds } from "date-fns";
 import { Play } from "phosphor-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import zod from "zod";
 import {
@@ -20,14 +22,57 @@ const newCycleSchema = zod.object({
     .max(60, "O ciclo deve ser de no máximo 60 minutos"),
 });
 
+type NewCycleData = zod.infer<typeof newCycleSchema>;
+
+interface Cycle {
+  id: string;
+  task: string;
+  minutesAmount: number;
+  startDate: Date;
+}
+
 function Home() {
-  const { register, handleSubmit, watch } = useForm({
+  const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [currentCycleId, setCurrentCycleId] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  const { register, handleSubmit, watch, reset } = useForm<NewCycleData>({
     resolver: zodResolver(newCycleSchema),
+    defaultValues: {
+      task: "",
+      minutesAmount: 0,
+    },
   });
 
-  function handleCreateNewCycle(data: any) {
-    console.log(data);
+  function handleCreateNewCycle(data: NewCycleData) {
+    const id = String(new Date().getTime());
+    const newCycle: Cycle = {
+      id,
+      task: data.task,
+      minutesAmount: data.minutesAmount,
+      startDate: new Date(),
+    };
+
+    setCycles((prevCycles) => [...prevCycles, newCycle]);
+    setCurrentCycleId(id);
+    setTimeLeft(data.minutesAmount * 60);
+    reset();
   }
+
+  const activeCycle = cycles.find((cycle) => cycle.id === currentCycleId);
+
+  useEffect(() => {
+    if (activeCycle) {
+      setInterval(() => {
+        setTimeLeft(differenceInSeconds(new Date(), activeCycle.startDate));
+      }, 1000);
+    }
+  }, [activeCycle]);
+
+  const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
+  const currentSeconds = totalSeconds - timeLeft;
+  const minutes = String(Math.floor(currentSeconds / 60)).padStart(2, "0");
+  const seconds = String(currentSeconds % 60).padStart(2, "0");
 
   const task = watch("task");
   const isSubmitDisabled = !task;
@@ -62,11 +107,11 @@ function Home() {
         </FormContainer>
 
         <CountdownContainer>
-          <span>0</span>
-          <span>0</span>
+          <span>{minutes[0]}</span>
+          <span>{minutes[1]}</span>
           <Separator>:</Separator>
-          <span>0</span>
-          <span>0</span>
+          <span>{seconds[0]}</span>
+          <span>{seconds[1]}</span>
         </CountdownContainer>
 
         <StartCountdownButton disabled={isSubmitDisabled} type="submit">
