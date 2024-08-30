@@ -1,9 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { differenceInSeconds } from "date-fns";
 import { HandPalm, Play } from "phosphor-react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import zod from "zod";
+import { CyclesContext } from "../../contexts/CyclesContext.tsx";
 import {
   CountdownContainer,
   FormContainer,
@@ -25,17 +26,15 @@ const newCycleSchema = zod.object({
 
 type NewCycleData = zod.infer<typeof newCycleSchema>;
 
-interface Cycle {
-  id: string;
-  task: string;
-  minutesAmount: number;
-  startDate: Date;
-  interruptedDate?: Date;
-}
-
 function Home() {
-  const [cycles, setCycles] = useState<Cycle[]>([]);
-  const [currentCycleId, setCurrentCycleId] = useState<string | null>(null);
+  const {
+    activeCycle,
+    createNewCycle,
+    interruptCurrentCycle,
+    setSecondsPassed,
+    markCurrentCycleAsFinished,
+  } = useContext(CyclesContext);
+
   const [timeLeft, setTimeLeft] = useState(0);
 
   const { register, handleSubmit, watch, reset } = useForm<NewCycleData>({
@@ -47,41 +46,30 @@ function Home() {
   });
 
   function handleCreateNewCycle(data: NewCycleData) {
-    const id = String(new Date().getTime());
-    const newCycle: Cycle = {
-      id,
-      task: data.task,
-      minutesAmount: data.minutesAmount,
-      startDate: new Date(),
-    };
-
-    setCycles((prevCycles) => [...prevCycles, newCycle]);
-    setCurrentCycleId(id);
-    setTimeLeft(data.minutesAmount * 60);
+    createNewCycle(data);
     reset();
   }
 
   function handleInterruptCycle() {
-    setCycles(
-      cycles.map((cycle) => {
-        if (cycle.id === currentCycleId) {
-          return { ...cycle, interruptedDate: new Date() };
-        } else {
-          return cycle;
-        }
-      }),
-    );
-    setCurrentCycleId(null);
+    interruptCurrentCycle();
   }
-
-  const activeCycle = cycles.find((cycle) => cycle.id === currentCycleId);
 
   useEffect(() => {
     let interval: number;
 
     if (activeCycle) {
       interval = setInterval(() => {
-        setTimeLeft(differenceInSeconds(new Date(), activeCycle.startDate));
+        const secondsDifference = differenceInSeconds(
+          new Date(),
+          new Date(activeCycle.startDate),
+        );
+        if (secondsDifference >= activeCycle.minutesAmount * 60) {
+          markCurrentCycleAsFinished();
+          setSecondsPassed(activeCycle.minutesAmount * 60);
+          clearInterval(interval);
+        } else {
+          setTimeLeft(secondsDifference);
+        }
       }, 1000);
     }
 
@@ -89,7 +77,7 @@ function Home() {
       clearInterval(interval);
       setTimeLeft(0);
     };
-  }, [activeCycle]);
+  }, [activeCycle, setSecondsPassed, markCurrentCycleAsFinished]);
 
   const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
   const currentSeconds = totalSeconds - timeLeft;
