@@ -1,4 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useContext } from "react";
 import { CyclesContext } from "../../contexts/CyclesContext.tsx";
 import { HistoryContainer, HistoryList, Status } from "./styles";
@@ -29,7 +30,7 @@ function History() {
                   <td>
                     {formatDistanceToNow(new Date(cycle.startDate), {
                       addSuffix: true,
-                      // locale: ptBR,
+                      locale: ptBR,
                     })}
                   </td>
                   <td>

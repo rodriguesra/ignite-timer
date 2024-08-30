@@ -57,8 +57,8 @@ function Home() {
   useEffect(() => {
     let interval: number;
 
-    if (activeCycle) {
-      interval = setInterval(() => {
+    const updateCountdown = () => {
+      if (activeCycle) {
         const secondsDifference = differenceInSeconds(
           new Date(),
           new Date(activeCycle.startDate),
@@ -70,7 +70,12 @@ function Home() {
         } else {
           setTimeLeft(secondsDifference);
         }
-      }, 1000);
+      }
+    };
+
+    if (activeCycle) {
+      updateCountdown(); // Atualiza imediatamente após a montagem
+      interval = setInterval(updateCountdown, 1000);
     }
 
     return () => {
